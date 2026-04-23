@@ -26,6 +26,7 @@ interface DealerRow {
   id: string;
   name: string;
   company: string | null;
+  status: string;
 }
 interface ProductRow {
   id: string;
@@ -55,8 +56,8 @@ const PlaceProductOrderDialog = ({ onCreated }: Props) => {
     if (!open) return;
     (async () => {
       const [d, p] = await Promise.all([
-        supabase.from("dealers").select("id,name,company").eq("status", "active"),
-        supabase.from("products").select("id,name,price,unit,quantity"),
+        supabase.from("dealers").select("id,name,company,status").order("status").order("name"),
+        supabase.from("products").select("id,name,price,unit,quantity").order("name"),
       ]);
       setDealers(d.data ?? []);
       setProducts(p.data ?? []);
@@ -135,8 +136,19 @@ const PlaceProductOrderDialog = ({ onCreated }: Props) => {
               <SelectTrigger><SelectValue placeholder="Select dealer" /></SelectTrigger>
               <SelectContent>
                 {dealers.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.company ?? d.name} — {d.name}
+                  <SelectItem key={d.id} value={d.id} disabled={d.status !== "active"}>
+                    <span className="flex items-center gap-2">
+                      <span>{d.company ?? d.name} — {d.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          d.status === "active"
+                            ? "bg-success/15 text-success"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {d.status.toUpperCase()}
+                      </span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

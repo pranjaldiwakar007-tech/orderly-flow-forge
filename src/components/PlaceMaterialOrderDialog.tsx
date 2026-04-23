@@ -32,6 +32,7 @@ interface MaterialRow {
   name: string;
   unit: string;
   quantity: number;
+  threshold: number;
 }
 interface LineItem {
   materialId: string;
@@ -58,8 +59,10 @@ const PlaceMaterialOrderDialog = ({ onCreated }: Props) => {
     if (!open) return;
     (async () => {
       const [s, m] = await Promise.all([
-        supabase.from("suppliers").select("id,name"),
-        supabase.from("raw_materials").select("id,name,unit,quantity"),
+        supabase.from("suppliers").select("id,name").order("name"),
+        supabase.from("raw_materials")
+          .select("id,name,unit,quantity,threshold")
+          .order("name"),
       ]);
       setSuppliers(s.data ?? []);
       setMaterials(m.data ?? []);
@@ -165,11 +168,24 @@ const PlaceMaterialOrderDialog = ({ onCreated }: Props) => {
                   >
                     <SelectTrigger><SelectValue placeholder="Material" /></SelectTrigger>
                     <SelectContent>
-                      {materials.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name} ({m.quantity} {m.unit})
-                        </SelectItem>
-                      ))}
+                      {materials.map((m) => {
+                        const low = m.quantity <= m.threshold;
+                        return (
+                          <SelectItem key={m.id} value={m.id}>
+                            <span className="flex items-center gap-2">
+                              <span>{m.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {m.quantity}/{m.threshold} {m.unit}
+                              </span>
+                              {low && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/15 text-warning font-medium">
+                                  LOW
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
